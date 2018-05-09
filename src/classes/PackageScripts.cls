@@ -91,7 +91,7 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
     }
 
     /**
-     * Execute the installation scripts for the OrderApi managed package
+     * Execute the installation scripts for the managed package
      */
     global static void install() {
         new Install().run();
@@ -152,23 +152,32 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
             regObjects.add(obj1);
             */
 
+            Framework.RegisteredObject obj1 = new Framework.RegisteredObject();
+            obj1.sObjectName = Framework.SchemaService.getDescribe(HighUsageAlert__c.SObjectType).getName();
+            obj1.apexClass = HighUsageAlerts.class.getName();
+            obj1.namespace = PackageUtils.namespace;
+            obj1.isEnabled = true;
+            obj1.isStandard = true;
+            obj1.triggersEnabled = true;
+            obj1.soqlLimit = String.valueOf(2000);
+            obj1.soqlOrderBy = 'Name ASC';
+            regObjects.add(obj1);
+
             Framework.Config.push(regObjects);
 
 
             // R O U T I N G    R U L E S
             Framework.RoutingRule[] rules = new List<Framework.RoutingRule>();
 
-            // Account ** Routing Rule Extension **
+            // High Usage Alert ** Routing Rule Extension **
             // ---------------------------------------------------------------------
-            /* TEMPLATE FROM ROUTING RULES
-            Framework.RoutingRule objRule = new Framework.RoutingRule();
-            objRule.apexClass = CLASSNAME.class.getName();
-            objRule.namespace = PackageUtils.namespace;
-            objRule.isEnabled = true;
-            objRule.sObjectName = SObjectType.SOBJECTNAME.getName();
-            objRule.executionOrder = 0;
-            rules.add(objRule);
-            */
+            Framework.RoutingRule huaRule = new Framework.RoutingRule();
+            huaRule.apexClass = HighUsageAlerts.class.getName();
+            huaRule.namespace = PackageUtils.namespace;
+            huaRule.isEnabled = true;
+            huaRule.sObjectName = SObjectType.HighUsageAlert__c.getName();
+            huaRule.executionOrder = 0;
+            rules.add(huaRule);
 
             Framework.Config.push(rules);
         }

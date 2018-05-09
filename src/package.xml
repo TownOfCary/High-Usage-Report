@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>High Usage Report</fullName>
+    <types>
+        <members>HighUsageAlerts</members>
+        <members>PackageScripts</members>
+        <members>PackageUtils</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>HighUsageAlert__c</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>HighUsageAlert__c-High Usage Alert Layout</members>
+        <name>Layout</name>
+    </types>
+    <version>41.0</version>
+</Package>
