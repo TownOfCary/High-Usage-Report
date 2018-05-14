@@ -180,7 +180,7 @@ public with sharing class HighUsageAlertController {
         return options;
     }
 
-    // Begin Initiation Private Function
+    // Begin Private Initiation Function
     private void buildServiceList() {
         //get list of service types from the picklist on the High Usage Alert object.
         //used in both user assignment and working the list so it is loaded here to save from loading on each refresh
@@ -211,7 +211,7 @@ public with sharing class HighUsageAlertController {
         List<AggregateResult> tmp =
                 [SELECT OwnerId, COUNT(Id)
                 FROM HighUsageAlert__c
-                WHERE OwnerId != :this.TOCAPIUSERID AND Action_Code__c = null
+                WHERE OwnerId != :this.TOCAPIUSERID AND ActionCode__c = null
                 GROUP BY OwnerId];
 
         List<Id> userIds = new List<Id>();
@@ -228,5 +228,162 @@ public with sharing class HighUsageAlertController {
             this.userList.add(new SelectOption(u.Id, u.Name));
         }
     }
-    //End Initiation Private Functions
+
+    private void buildCaseTotals() {
+        List<HighUsageAlert__c> huaList = getCaseList();
+
+        for (HighUsageAlert__c hua :huaList) {
+            Integer tmpCount = this.caseServiceTotalAmounts.get(hua.Service__c) + 1;
+            this.caseServiceTotalAmounts.put(hua.Service__c, tmpCount);
+        }
+    }
+    //End Private Initiation Functions
+
+    // Begin Private Helper Functions
+    private void setPageList(){
+        //get list of cases that are open and are in the work queue for current user
+        List<HighUsageAlertWrapper> huaFullList = getFullList();
+        Boolean userInWorkerList = false;
+        for (SelectOption so : this.userList) {
+            if (so.getValue() != 'All' && so.getValue() == this.theUserId) {
+                userInWorkerList = true;
+            }
+        }
+        if (userInWorkerList) {
+            huaFullList = getHUAUserList(huaFullList);
+        }
+
+        this.huaReportSetController = new List<HighUsageAlertWrapper>();
+
+        if (this.serviceSearch != 'All' && this.serviceSearch != null) {
+            huaFullList = getHUAListByService(huaFullList);
+        }
+
+        //find max index that we need to loop through subtract 1 becasue display amount is not zero based like arrays
+        Integer maxIndex = this.currentStartNumber + Integer.valueOf(this.displayAmount) - 1;
+        //If our new maxIndex is greater or equal to the case size then set maxIndex to the max index of the case list
+        if (maxIndex >= huaFullList.size()) {
+            maxIndex = huaFullList.size() - 1;
+        }
+        //fill the wrapper class
+        for (Integer i = this.currentStartNumber; i <= maxIndex; i++) {
+            this.huaReportSetController.add(huaFullList[i]);
+        }
+
+        this.totalCasesForPagination = huaFullList.size();
+    }
+
+    private List<HighUsageAlertWrapper> getFullList() {
+        //get list of cases that are open and are in the leak queue for current user
+        List<HighUsageAlert__c> huaList = getCaseList();
+        List<HighUsageAlertWrapper> results = new List<HighUsageAlertWrapper>();
+
+        //fill the wrapper class
+        for (HighUsageAlert__c hua :huaList) {
+            HighUsageAlertWrapper tmp = new HighUsageAlertWrapper();
+            tmp.theCase = hua;
+            if (hua.Case__r.Contact.Email == null) {
+                tmp.actionCodes = this.actionCodeOptionsNoEmail;
+            } else {
+                tmp.actionCodes = this.actionCodeOptions;
+            }
+            results.add(tmp);
+        }
+        return results;
+    }
+
+    //get case list based on Status, Date, and Issue, List is already sorted on column and in the correct order
+    private List<HighUsageAlert__c> getCaseList() {
+        DateTime cutoffDate = Datetime.now().addDays(-7);
+        String sortAorD = getSortOrderString();
+
+        String highUsageOrder = '';
+        if (this.currentSortColumn.split('\\.')[0] != 'Case__r') {
+            highUsageOrder += this.currentSortColumn.split('\\.')[1]  + ' ' + sortAorD + ' NULLS LAST';
+        } else {
+            highUsageOrder += this.currentSortColumn + ' ' + sortAorD + ' NULLS LAST';
+        }
+
+        List<Case> tmpCases =
+                [SELECT
+                        (SELECT Id
+                        FROM HighUsageAlerts__r
+                        ORDER By CreatedDate DESC Limit 1)
+                FROM Case
+                WHERE (CaseIssue__c  = :this.HUACASEISSUEID OR CaseIssue__c = :this.RECLAIMEDISSUEID)
+                    AND Status = :this.caseStatus AND LastModifiedDate >= :cutoffDate];
+
+        List<Id> huaIDs = new List<Id>();
+        for (Case c: tmpCases) {
+            if (c.HighUsageAlerts__r != null && c.HighUsageAlerts__r.size() >= 1) {
+                huaIDs.add(c.HighUsageAlerts__r[0].Id);
+            }
+        }
+        /* Fields Pulled out due to not being in package yet
+         * Account_Service__r.Id, Account_Service__r.CID__c,
+         * Account_Service__r.LID__c, Account_Service__r.Service_Type__c,
+         */
+        String query =
+                'SELECT Id, Name, OwnerID, CreatedDate, Case__c, Customer_Name__c, Meter_Number__c, Radio_Number__c, Service__c, '
+                    + 'Class__c, Cycle_Route__c, Prior_7_Day_Average__c, Percent_Change__c, Prior_Day__c, Prior_2_Days__c, '
+                    + 'Continous_Usuage__c, Contacted__c, CID__c, LID__c, Appearance_Count__c, Action_Code__c, Contact_Count__c, '
+                    + 'No_Contact_Count__c, No_Contact_Workload__c,  Case__r.Id, Case__r.Priority, Case__r.Status, Case__r.CaseNumber, '
+                    + 'Case__r.Description, Case__r.Contact.Email, Case__r.LastModifiedDate, Case__r.Account.Id, Case__r.Account.Name, '
+                    + 'Case__r.Account.CID__c, Case__r.ServiceAddress__r.Id '
+                + 'FROM HighUsageAlert__c '
+                + 'WHERE Id in :huaIDs '
+                + 'ORDER BY ' + highUsageOrder;
+
+        System.debug(Logginglevel.INFO,query);
+        return Database.query(query);
+    }
+
+    private String getSortOrderString() {
+        if (this.sortOrder) {
+            return 'DESC';
+        } else {
+            return 'ASC';
+        }
+    }
+
+    private List<HighUsageAlertWrapper> getHUAUserList(List<HighUsageAlertWrapper> fullList) {
+        List<HighUsageAlertWrapper> results = new List<HighUsageAlertWrapper>();
+        for (HighUsageAlertWrapper huaw : fullList) {
+            if (huaw.theCase.ownerID == this.theUserId) {
+                results.add(huaw);
+            }
+        }
+        return results;
+    }
+
+    private List<HighUsageAlertWrapper> getHUAListByService(List<HighUsageAlertWrapper> fullList) {
+        List<HighUsageAlertWrapper> results = new List<HighUsageAlertWrapper>();
+        for (HighUsageAlertWrapper huaw : fullList) {
+            if (huaw.theCase.Service__c == this.serviceSearch) {
+                results.add(huaw);
+            }
+        }
+        return results;
+    }
+
+    private List<SelectOption> retrieveUtilityAccountsUserList() {
+        //get list of all users in Utility Accounts who could work on high usage report and build a select option list.
+        //hardcoded option is for testing, change to Utility Accounts Profile for live
+        //List<User> tmpUser = [Select Id, Name From User Where ProfileID != :this.TOCAPIUSERID AND ProfileId != '00e36000000ahwc'];
+        List<User> tmpUser =
+                [SELECT Id, Name
+                FROM User
+                WHERE Id in
+                        (SELECT AssigneeId
+                        FROM PermissionSetAssignment
+                        WHERE PermissionSetId = :this.HIGHUSAGEPERMISSION)];
+        List<SelectOption> tmpSelectList = new List<SelectOption>();
+        for (User u :tmpUser) {
+            tmpSelectList.add(new SelectOption(u.Id, u.Name));
+        }
+        SelectOptionSorter.doSort(tmpSelectList, SelectOptionSorter.FieldToSort.Label);
+        return tmpSelectList;
+    }
+    // End Private Helper Functions
+
 }

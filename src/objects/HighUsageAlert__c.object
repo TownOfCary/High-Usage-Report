@@ -53,6 +53,18 @@
     <enableSharing>true</enableSharing>
     <enableStreamingApi>true</enableStreamingApi>
     <fields>
+        <fullName>Account_Service__c</fullName>
+        <deleteConstraint>SetNull</deleteConstraint>
+        <externalId>false</externalId>
+        <label>Account Service</label>
+        <referenceTo>Account_Service__c</referenceTo>
+        <relationshipLabel>High Usage Alerts</relationshipLabel>
+        <relationshipName>HighUsageAlerts</relationshipName>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Lookup</type>
+    </fields>
+    <fields>
         <fullName>ActionCode__c</fullName>
         <deleteConstraint>SetNull</deleteConstraint>
         <externalId>false</externalId>
@@ -95,7 +107,7 @@
         <label>Case</label>
         <referenceTo>Case</referenceTo>
         <relationshipLabel>High Usage Alerts</relationshipLabel>
-        <relationshipName>High_Usage_Alerts</relationshipName>
+        <relationshipName>HighUsageAlerts</relationshipName>
         <required>false</required>
         <trackHistory>false</trackHistory>
         <trackTrending>false</trackTrending>

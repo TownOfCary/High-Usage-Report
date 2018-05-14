@@ -12,6 +12,8 @@
         <members>Test_HighUsageAlertController</members>
         <members>HighUsageAlertWrapper</members>
         <members>HighUsageWorker</members>
+        <members>SelectOptionSorter</members>
+        <members>Test_SelectOptionSorter</members>
         <name>ApexClass</name>
     </types>
     <types>
@@ -29,6 +31,7 @@
         <members>ActionCode__c.Send_Email__c</members>
         <members>ActionCode__c.Work_Order__c</members>
         <members>ActionCode__c.Work_Type__c</members>
+        <members>HighUsageAlert__c.Account_Service__c</members>
         <members>HighUsageAlert__c.ActionCode__c</members>
         <members>HighUsageAlert__c.Appearance_Count__c</members>
         <members>HighUsageAlert__c.CID__c</members>
