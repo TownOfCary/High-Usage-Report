@@ -1,0 +1,10 @@
+<!--
+ - Created by byarsawi on 5/14/2018.
+ -->
+
+<apex:page docType="html-5.0" controller="HighUsageAlertController" sidebar="false">
+    <apex:includeScript value="{!URLFOR($Resource.jquery_3_1_0_min)}" />
+    <apex:includeScript value="{!URLFOR($Resource.colResizable)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.HighUsageReportStylesheet)}"/>
+
+</apex:page>
