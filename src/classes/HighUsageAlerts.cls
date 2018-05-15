@@ -25,18 +25,8 @@ global class HighUsageAlerts extends Framework.Domain {
         Framework.Log.pop();
     }
 
-    public override void afterInsert() {
-        Framework.Log.push(HighUsageAlerts.class.getName(),'afterInsert');
-        Framework.Log.pop();
-    }
-
     public override void beforeUpdate(Map<Id,SObject> oldMap) {
         Framework.Log.push(HighUsageAlerts.class.getName(),'beforeUpdate');
-        Framework.Log.pop();
-    }
-
-    public override void afterUpdate(Map<Id,SObject> oldMap) {
-        Framework.Log.push(HighUsageAlerts.class.getName(),'afterUpdate');
         Framework.Log.pop();
     }
 

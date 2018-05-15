@@ -155,6 +155,213 @@ public with sharing class HighUsageAlertController {
         system.debug(this.huaReportSetController);
     }
 
+    // Begin Public Page Reference functions
+    public PageReference changeCaseList() {
+        this.currentStartNumber = 0;
+        this.recordLBound = this.currentStartNumber + 1;
+        this.setPageList();
+        return null;
+    }
+
+    public PageReference saveInlineChanges() {
+        try {
+            List<HighUsageAlert__c> huaChanges = new List<HighUsageAlert__c>();
+            List<Case> caseChanges = new List<Case>();
+            for (HighUsageAlertWrapper huaWrapper : this.huaReportSetController) {
+                if (huaWrapper.isSelected) {
+                    huaChanges.add(huaWrapper.theCase);
+                    caseChanges.add(huaWrapper.theCase.Case__r);
+                }
+            }
+
+            if (!caseChanges.isEmpty()) {
+                upsert caseChanges;
+            }
+            if (!huaChanges.isEmpty()) {
+                upsert huaChanges;
+            }
+
+            this.currentStartNumber = 0;
+            this.recordLBound = this.currentStartNumber + 1;
+            this.setPageList();
+        } catch(System.DMLException e) {
+            ApexPages.addMessages(e);
+            System.debug(Logginglevel.INFO,e);
+        }
+        return null;
+    }
+
+    public PageReference closeRemaining() {
+        try {
+            ActionCode__c actionCode =
+                [SELECT Id, Name, Case_Status__c
+                FROM ActionCode__c
+                WHERE Name = 'No Contact-Workload'][0];
+            List<HighUsageAlert__c> updateQueue = new List<HighUsageAlert__c>();
+            String query = 'ActionCode__c = null';
+            Framework.Selector huas = new Framework.Selector(HighUsageAlert__c.getSObjectType(), query);
+            for (HighUsageAlert__c hua : (List<HighUsageAlert__c>) huas.getAll()) {
+                hua.ActionCode__c = actionCode.Id;
+                updateQueue.add(hua);
+            }
+            update updateQueue;
+            this.currentStartNumber = 0;
+            this.recordLBound = this.currentStartNumber + 1;
+            this.setPageList();
+        } catch(System.DMLException e) {
+            ApexPages.addMessages(e);
+            System.debug(Logginglevel.INFO,e);
+        }
+        return null;
+    }
+
+    public PageReference reassignWorkers() {
+        this.casesAssigned = false;
+        buildServiceList();
+        this.unselectedWorkers = retrieveUtilityAccountsUserList();
+        //build up the map of the totals for each type of case
+        reassignCaseTotals();
+        return null;
+    }
+
+    public PageReference doSelect() {
+        //until there is a contains() function a double loop will have to do.
+        //I will have to look into the cost for this versus two database calls to reload both lists
+        //The number of users maximum is fairly small for this page so the n^2 cost should not be a problem
+        List<Integer> removeWorkers = new List<Integer>();
+        for (String workerID : this.workersToAdd) {
+            for (Integer i = 0; i < this.unselectedWorkers.size(); i++) {
+                if (this.unselectedWorkers[i].getValue() == workerID) {
+                    removeWorkers.add(i);
+                }
+            }
+        }
+        system.debug(removeWorkers);
+        for (Integer i = removeWorkers.size() - 1; i >= 0; i--) {
+            system.debug(removeWorkers[i]);
+            system.debug(this.unselectedWorkers[removeWorkers[i]]);
+            SelectOption tmp = this.unselectedWorkers.remove(removeWorkers[i]);
+            this.selectedWorkers.add(new HighUsageWorker(tmp.getValue(), tmp.getLabel(), this.workerCaseInitMap.clone() ));
+        }
+        return null;
+    }
+
+    public PageReference doUnSelect() {
+        List<Integer> workerSwitch = new List<Integer>();
+        for (Integer i = 0; i < this.selectedWorkers.size(); i++) {
+            if (this.selectedWorkers[i].isSelected) {
+                workerSwitch.add(i);
+            }
+        }
+        for (Integer i = workerSwitch.size() - 1; i >= 0; i--) {
+            HighUsageWorker tmp = this.selectedWorkers.remove(workerSwitch[i]);
+            this.unselectedWorkers.add(new SelectOption(tmp.userId, tmp.userName));
+        }
+        SelectOptionSorter.doSort(this.unselectedWorkers, SelectOptionSorter.FieldToSort.Label);
+        return null;
+    }
+
+    public PageReference saveWorkerInfo() {
+        Map<String, Integer> totalAssignedCases = new Map<String, Integer>();
+        //huaReportWorkersList = new Map<Id, List<HighUsageAlertWrapper>>();
+        for (HighUsageWorker huw : this.selectedWorkers) {
+            for (String key : huw.numCases.keySet()) {
+                if (totalAssignedCases.get(key) == null) {
+                    totalAssignedCases.put(key, huw.numCases.get(key));
+                } else {
+                    totalAssignedCases.put(key, totalAssignedCases.get(key) + huw.numCases.get(key));
+                }
+            }
+        }
+
+        if (totalAssignedCases != this.caseServiceTotalAmounts) {
+            ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR,
+                    'Please make sure the total number of cases assigned to each user is equal'
+                            + ' to the total number of cases in each category.'));
+            return null;
+        }
+
+        Map<String, List<HighUsageAlert__c>> sameAccounts = getSameAccounts();
+        assignSameAccountHUAs(sameAccounts);
+        Map<String, List<HighUsageAlertWrapper>> huasByService = divideHUAs();
+
+
+        List<HighUsageAlert__c> huasToUpdate = new List<HighUsageAlert__c>();
+        Integer numAlreadyAssigned = 0;
+        for (String key : huasByService.keySet()) {
+            Integer workerIndex = 0;
+            if (huasByService.get(key) != null) {
+                System.debug(Logginglevel.INFO, huasByService.get(key).size());
+            }
+            while (huasByService.get(key) != null && !huasByService.get(key).isEmpty()) {
+                //if we've run out of workers for this case or it is already assigned then skip to end and remove the case.
+                if (workerIndex < this.selectedWorkers.size() && !sameAccounts.containsKey(huasByService.get(key)[0].theCase.CID__c)) {
+                    //if the current worker has a case left assign owner to HUA, put in list to update and jump to end
+                    if (this.selectedWorkers[workerIndex].numCases.get(key) > 0) {
+                        huasByService.get(key)[0].theCase.OwnerID = this.selectedWorkers[workerIndex].userID;
+                        huasToUpdate.add(huasByService.get(key)[0].theCase);
+                        this.selectedWorkers[workerIndex].numCases.put(
+                                key,
+                                this.selectedWorkers[workerIndex].numCases.get(key) -1);
+                    } else {
+                        //get next worker index
+                        do {
+                            workerIndex++;
+                        } while (workerIndex < this.selectedWorkers.size() && this.selectedWorkers[workerIndex].numCases.get(key) <= 0);
+                        //This is a check for something that should never happen.
+                        if (workerIndex >= this.selectedWorkers.size()) {
+                            // I don't know what to do.
+                            System.debug(Logginglevel.INFO, 'ERRRRRRRRRRRRRROOOOOOOOOOOOORRRRRR');
+                        } else {
+                            System.debug(Logginglevel.INFO, 'Id before change: ' + huasByService.get(key)[0].theCase.OwnerID);
+                            //we have a new worker with cases to assign
+                            huasByService.get(key)[0].theCase.OwnerID = this.selectedWorkers[workerIndex].userID;
+                            huasToUpdate.add(huasByService.get(key)[0].theCase);
+                            this.selectedWorkers[workerIndex].numCases.put(key, this.selectedWorkers[workerIndex].numCases.get(key) -1);
+                        }
+                    }
+                    //if last case assigned was workers last case then increment the worker index.
+                    if (workerIndex < this.selectedWorkers.size() && this.selectedWorkers[workerIndex].numCases.get(key) <= 0) {
+                        workerIndex++;
+                    }
+                } else {
+                    numAlreadyAssigned++;
+                }
+                huasByService.get(key).remove(0);
+            }
+        }
+        update huasToUpdate;
+        this.casesAssigned = true;
+        fillUserList();
+        this.setPageList();
+        return null;
+    }
+
+    //function called for sorting list by certain fields
+    public PageReference sortList(){
+        if (this.currentSortColumn == this.sortColumn) {
+            this.sortOrder = !this.sortOrder;
+        } else {
+            this.sortOrder = true;
+        }
+        this.currentSortColumn = this.sortColumn;
+        this.currentStartNumber = 0;
+        System.debug(Logginglevel.INFO,this.currentSortColumn);
+        this.recordLBound = this.currentStartNumber + 1;
+        this.setPageList();
+        return null;
+    }
+
+    public PageReference searchService() {
+        this.currentStartNumber = 0;
+        this.recordLBound = this.currentStartNumber + 1;
+        this.setPageList();
+        return null;
+    }
+    // End Public Page Reference functions
+
+
+    // Begin Public Helper Functions
     public List<selectOption> getPickValues(SObject object_name, String field_name, String first_val) {
         Framework.Log.push(HighUsageAlertController.class.getName(),'getPickValues');
 
@@ -179,6 +386,58 @@ public with sharing class HighUsageAlertController {
         //return the List
         return options;
     }
+
+    public void selectAll() {
+        for (HighUsageAlertWrapper huaWrapper :this.huaReportSetController) {
+            huaWrapper.isSelected = this.selected;
+        }
+    }
+
+    public Boolean hasNext {
+        get {
+            if (this.currentStartNumber + Integer.valueOf(this.displayAmount) >= this.totalCasesForPagination) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        set;
+    }
+
+    public Boolean hasPrevious {
+        get {
+            if (this.currentStartNumber < Integer.valueOf(this.displayAmount)) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        set;
+    }
+
+    public void next() {
+        if (hasNext) {
+            this.currentStartNumber += Integer.valueOf(this.displayAmount);
+            this.recordLBound = this.currentStartNumber + 1;
+            this.setPageList();
+        }
+    }
+
+    public void previous() {
+        if (hasPrevious) {
+            this.currentStartNumber -= Integer.valueOf(this.displayAmount);
+            this.recordLBound = this.currentStartNumber + 1;
+            this.setPageList();
+        }
+    }
+
+    public PageReference changeTableSize(){
+        this.currentStartNumber = 0;
+        this.recordLBound = this.currentStartNumber + 1;
+        this.setPageList();
+        return null;
+    }
+    //End Public Helper Functions
 
     // Begin Private Initiation Function
     private void buildServiceList() {
@@ -383,6 +642,136 @@ public with sharing class HighUsageAlertController {
         }
         SelectOptionSorter.doSort(tmpSelectList, SelectOptionSorter.FieldToSort.Label);
         return tmpSelectList;
+    }
+
+    private void reassignCaseTotals() {
+        String query = 'ActionCode__c = null';
+        Framework.Selector huaList = new Framework.Selector(HighUsageAlert__c.getSObjectType(), query);
+
+        for (HighUsageAlert__c hua : (List<HighUsageAlert__c>) huaList.getAll()) {
+            Integer tmpCount = this.caseServiceTotalAmounts.get(hua.Service__c) + 1;
+            this.caseServiceTotalAmounts.put(hua.Service__c, tmpCount);
+        }
+    }
+
+    private void assignSameAccountHUAs(Map<String, List<HighUsageAlert__c>> sameAccounts) {
+        List<String> keys = new List<String>(sameAccounts.keySet());
+        List<HighUsageAlert__c> huasToUpdate = new List<HighUsageAlert__c>();
+        for (Integer i = 0; i < keys.size(); i++) {
+            List<HighUsageAlert__c> tmpHUAs = sameAccounts.get(keys[i]);
+            Integer index = getHighestWorkload(tmpHUAs);
+            if (index <= -1) {
+                index = math.mod(i, this.selectedWorkers.size());
+            }
+
+            for (HighUsageAlert__c hua : tmpHUAs) {
+                hua.OwnerID = this.selectedWorkers[index].userID;
+                this.selectedWorkers[index].numCases.put(hua.Service__c, this.selectedWorkers[index].numCases.get(hua.Service__c) - 1);
+            }
+            huasToUpdate.addAll(tmpHUAs);
+        }
+        update huasToUpdate;
+    }
+
+    private Integer getHighestWorkload(List<HighUsageAlert__c> tmpHUAs) {
+        Integer results = -1;
+        Integer highestCases = 0;
+        for (Integer i = 0; i < this.selectedWorkers.size(); i++) {
+            Integer tmpHighestCases = this.selectedWorkers[i].getTotalCases();
+            if (tmpHighestCases > highestCases && checkWorkLoad(this.selectedWorkers[i], tmpHUAs)) {
+                results = i;
+                highestCases = tmpHighestCases;
+            }
+        }
+        return results;
+    }
+
+    private Boolean checkWorkLoad(HighUsageWorker huw, List<HighUsageAlert__c> tmpHUAs) {
+        Map<String, Integer> caseCounts = new Map<String, Integer>();
+        for (HighUsageAlert__c hua : tmpHUAs) {
+            String tmpService = hua.Service__c;
+            if (caseCounts.get(tmpService) == null) {
+                caseCounts.put(tmpService, 1);
+            } else {
+                caseCounts.put(tmpService, caseCounts.get(tmpService) + 1);
+            }
+        }
+        for (String key : caseCounts.keySet()) {
+            if (huw.numCases.get(key) < caseCounts.get(key)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Map<String, List<HighUsageAlert__c>> getSameAccounts() {
+        List<AggregateResult> agrCaseIds =
+        [SELECT Case__c, COUNT(Id)
+        FROM HighUsageAlert__c
+        WHERE ActionCode__c = null
+        GROUP BY Case__c
+        HAVING COUNT(Id) > 1];
+        List<Id> caseIds = new List<Id>();
+        for (AggregateResult ar :agrCaseIds) {
+            caseIds.add(String.valueOf(ar.get('Case__c')));
+        }
+
+        List<Case> tmpCases =
+        [SELECT Id,
+        (SELECT Id, CreatedDate, ActionCode__c
+        FROM HighUsageAlerts__r
+        WHERE ActionCode__c = null
+        ORDER BY CreatedDate DESC)
+        FROM Case
+        WHERE Id IN :caseIds];
+        List<HighUsageAlert__c> huasToUpdate = new List<HighUsageAlert__c>();
+        for (Case c : tmpCases) {
+            List<HighUsageAlert__c> tmpHUAs = c.HighUsageAlerts__r;
+            tmpHUAs.remove(0);
+            for (HighUsageAlert__c hua : tmpHUAs) {
+                hua.ActionCode__c = this.NEVERSEENAC.id;
+            }
+            huasToUpdate.addAll(tmpHUAs);
+        }
+        update huasToUpdate;
+
+        Map<String, List<HighUsageAlert__c>> results = new Map<String, List<HighUsageAlert__c>>();
+        List<HighUsageAlert__c> huaFullList =
+        [SELECT Id, OwnerId, CID__c, Service__c
+        FROM HighUsageAlert__c
+        Where ActionCode__c = null];
+        for (HighUsageAlert__c hua :huaFullList) {
+            if (results.get(hua.CID__c) == null) {
+                List<HighUsageAlert__c> tmp = new List<HighUsageAlert__c>();
+                tmp.add(hua);
+                results.put(hua.CID__c, tmp);
+            } else {
+                List<HighUsageAlert__c> tmp = results.get(hua.CID__c);
+                tmp.add(hua);
+                results.put(hua.CID__c, tmp);
+            }
+        }
+        for (String cid :results.keySet()) {
+            if (results.get(cid).size() <= 1) {
+                results.remove(cid);
+            }
+        }
+        return results;
+    }
+
+    private Map<String, List<HighUsageAlertWrapper>> divideHUAs() {
+        Map<String, List<HighUsageAlertWrapper>> results = new Map<String, List<HighUsageAlertWrapper>>();
+        for (HighUsageAlertWrapper huaWrapper :getFullList()) {
+            String tmpService = huaWrapper.theCase.Service__c;
+            if (results.get(tmpService) == null) {
+                List<HighUsageAlertWrapper> tmp = new List<HighUsageAlertWrapper>();
+                tmp.add(huaWrapper);
+                results.put(tmpService, tmp);
+            } else {
+                results.get(tmpService).add(huaWrapper);
+            }
+        }
+        return results;
     }
     // End Private Helper Functions
 

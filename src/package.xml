@@ -14,6 +14,7 @@
         <members>HighUsageWorker</members>
         <members>SelectOptionSorter</members>
         <members>Test_SelectOptionSorter</members>
+        <members>HighUsageAlertService</members>
         <name>ApexClass</name>
     </types>
     <types>
@@ -80,6 +81,10 @@
         <members>colResizable</members>
         <members>jquery_3_1_0_min</members>
         <name>StaticResource</name>
+    </types>
+    <types>
+        <members>HighUsageAlertTrigger</members>
+        <name>ApexTrigger</name>
     </types>
     <version>42.0</version>
 </Package>

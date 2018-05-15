@@ -241,6 +241,8 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
 
         private final String HIGHUSAGEISSUE = 'High Usage Alert';
         private final String RWHIGHUSAGEISSUE = 'Reclaimed Water High Usage Alert';
+        private final String NEVERSEEN = 'Never-Seen';
+        private final String WORKLOAD = 'No Contact-Workload';
 
         global void run() {
             String query = 'Name = \'' + this.HIGHUSAGEISSUE + '\' OR Name = \'' + this.RWHIGHUSAGEISSUE + '\'';
@@ -249,18 +251,38 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
 
             List<Case_Issue__c> newIssues = new List<Case_Issue__c>();
             newIssues.add(new Case_Issue__c(
-                    Name = this.HIGHUSAGEISSUE,
-                    Priority__c = 'Medium',
-                    Visibility__c = 'ToC Internal'
+                Name = this.HIGHUSAGEISSUE,
+                Priority__c = 'Medium',
+                Visibility__c = 'ToC Internal'
             ));
 
             newIssues.add(new Case_Issue__c(
-                    Name = this.RWHIGHUSAGEISSUE,
-                    Priority__c = 'Medium',
-                    Visibility__c = 'ToC Internal'
+                Name = this.RWHIGHUSAGEISSUE,
+                Priority__c = 'Medium',
+                Visibility__c = 'ToC Internal'
             ));
 
             insert newIssues;
+
+            String query2 = 'Name = \'' + this.NEVERSEEN + '\' OR Name = \'' + this.WORKLOAD + '\'';
+            Framework.Selector actionCodes = new Framework.Selector(ActionCode__c.getSObjectType(), query);
+            delete actionCodes.getAll();
+
+            List<ActionCode__c> newCodes = new List<ActionCode__c>();
+            newCodes.add(new ActionCode__c(
+                Name = this.NEVERSEEN,
+                Case_Status__c = 'New'
+            ));
+
+            newCodes.add(new ActionCode__c(
+                Name = this.WORKLOAD,
+                Case_Status__c = 'On Hold',
+                Send_Email__c = true,
+                Close_Case_Workload__c = true,
+                Order__c = 8
+            ));
+
+            insert newCodes;
         }
 
     }
