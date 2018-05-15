@@ -16,12 +16,13 @@ global class HighUsageAlerts extends Framework.Domain {
 
     public override void applyDefaults() {
         Framework.Log.push(HighUsageAlerts.class.getName(),'applyDefaults');
-        //High_Usage_AlertService.setDefaults((HighUsageAlert__c []) records);
+        //HighUsageAlertService.setDefaults((HighUsageAlert__c []) records);
         Framework.Log.pop();
     }
 
     public override void beforeInsert() {
         Framework.Log.push(HighUsageAlerts.class.getName(),'beforeInsert');
+        HighUsageAlertService.beforeInsert((HighUsageAlert__c[]) records);
         Framework.Log.pop();
     }
 
