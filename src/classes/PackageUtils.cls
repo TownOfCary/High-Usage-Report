@@ -17,6 +17,6 @@
  * @author Ulas Kutuk
  **/
 public class PackageUtils {
-    public static final String namespace = 'HighUsage_bsy';
-    public static String nsp = 'HighUsage_bsy';
+    public static final String namespace = 'HighUsage_toc';
+    public static String nsp = 'HighUsage_toc';
 }

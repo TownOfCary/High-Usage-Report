@@ -186,13 +186,13 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
 
             // High Usage Alert ** Routing Rule Extension **
             // ---------------------------------------------------------------------
-            Framework.RoutingRule huaRule = new Framework.RoutingRule();
-            huaRule.apexClass = HighUsageAlerts.class.getName();
-            huaRule.namespace = PackageUtils.namespace;
-            huaRule.isEnabled = true;
-            huaRule.sObjectName = SObjectType.HighUsageAlert__c.getName();
-            huaRule.executionOrder = 0;
-            rules.add(huaRule);
+//            Framework.RoutingRule huaRule = new Framework.RoutingRule();
+//            huaRule.apexClass = HighUsageAlerts.class.getName();
+//            huaRule.namespace = PackageUtils.namespace;
+//            huaRule.isEnabled = true;
+//            huaRule.sObjectName = SObjectType.HighUsageAlert__c.getName();
+//            huaRule.executionOrder = 0;
+//            rules.add(huaRule);
 
             Framework.Config.push(rules);
         }
@@ -246,14 +246,14 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
 
         global void run() {
             String query = 'Name = \'' + this.HIGHUSAGEISSUE + '\' OR Name = \'' + this.RWHIGHUSAGEISSUE + '\'';
-            Framework.Selector caseIssues = new Framework.Selector(Case_Issue__c.getSObjectType(), query);
+            Framework.Selector caseIssues = new Framework.Selector(base_toc__Case_Issue__c.getSObjectType(), query);
             delete caseIssues.getAll();
 
-            List<Case_Issue__c> newIssues = new List<Case_Issue__c>();
-            newIssues.add(new Case_Issue__c(
-                Name = this.HIGHUSAGEISSUE,
-                Priority__c = 'Medium',
-                Visibility__c = 'ToC Internal'
+            List<base_toc__Case_Issue__c> newIssues = new List<Case_Issue__c>();
+            newIssues.add(new base_toc__Case_Issue__c(
+                    Name = this.HIGHUSAGEISSUE,
+                    base_toc__Priority__c = 'Medium',
+                    base_toc__Visibility__c = 'ToC Internal'
             ));
 
             newIssues.add(new Case_Issue__c(

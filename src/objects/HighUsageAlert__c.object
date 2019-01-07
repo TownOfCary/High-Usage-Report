@@ -57,7 +57,7 @@
         <deleteConstraint>SetNull</deleteConstraint>
         <externalId>false</externalId>
         <label>Account Service</label>
-        <referenceTo>Account_Service__c</referenceTo>
+        <referenceTo>base_toc__Account_Service__c</referenceTo>
         <relationshipLabel>High Usage Alerts</relationshipLabel>
         <relationshipName>HighUsageAlerts</relationshipName>
         <required>false</required>

@@ -86,5 +86,5 @@
         <members>HighUsageAlertTrigger</members>
         <name>ApexTrigger</name>
     </types>
-    <version>42.0</version>
+    <version>44.0</version>
 </Package>
