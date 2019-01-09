@@ -72,11 +72,11 @@ public with sharing class HighUsageAlertController {
     //private final variables
     private  final Id HUACASEISSUEID =
             [SELECT Id
-            FROM Case_Issue__c
+            FROM base_toc__Case_Issue__c
             WHERE Name = 'High Usage Alert'][0].Id;
     private final Id RECLAIMEDISSUEID =
             [SELECT Id
-            FROM Case_Issue__c
+            FROM base_toc__Case_Issue__c
             WHERE Name = 'Reclaimed Water High Usage Alert'][0].Id;
     private final Id HIGHUSAGEPERMISSION =
             [SELECT Id
@@ -86,12 +86,12 @@ public with sharing class HighUsageAlertController {
             [SELECT Id
             FROM User
             WHERE Alias = 'tocapi'][0].Id;
-    private final ActionCode__c NEVERSEENAC =
+    private final Action_Code__c NEVERSEENAC =
             [SELECT Id, Name, Send_Email__c
-            FROM ActionCode__c
+            FROM Action_Code__c
             WHERE Name = 'Never-Seen'];
 
-    public HighUsageAlertController(){
+    public HighUsageAlertController() {
         //initialize varriables
         //determines if cases have already been assigned to the users, assume fales on each load until checked
         this.casesAssigned = false;
@@ -108,7 +108,7 @@ public with sharing class HighUsageAlertController {
         //user id selected in the drop down list to see their currently assigned cases
         this.theUserId = UserInfo.getUserId();
         //Column we intially sort the list of cases by.
-        this.currentSortColumn = 'HighUsageAlert__c.Percent_Change__c';
+        this.currentSortColumn = 'High_Usage_Alert__c.Percent_Change__c';
 
         this.caseStatus = 'New'; 		//default case status that is displayed
         this.displayAmount = '25';		//default number of cases shown per page
@@ -126,14 +126,14 @@ public with sharing class HighUsageAlertController {
 
         //get list of all action codes and place them in Select Option List for drop down
         //this is only used by the actual report page, but I'll load it in the constructor to save time on each page refresh
-        String query = 'Order__c != null';
-        Framework.Selector actionCodes = new Framework.Selector(ActionCode__c.getSObjectType(), query);
+        String query = PackageUtils.namespace + '__Order__c != null';
+        Framework.Selector actionCodes = new Framework.Selector(Action_Code__c.getSObjectType(), query);
         this.actionCodeOptions = new List<SelectOption>();
         this.actionCodeOptions.add(new SelectOption('', ''));
         this.actionCodeOptions.addAll(actionCodes.selectOptions());
 
-        query += ' AND Send_Email__c = false';
-        Framework.Selector actionCodesNoEmail = new Framework.Selector(ActionCode__c.getSObjectType(), query);
+        query += ' AND ' + PackageUtils.namespace + '__Send_Email__c = false';
+        Framework.Selector actionCodesNoEmail = new Framework.Selector(Action_Code__c.getSObjectType(), query);
         this.actionCodeOptionsNoEmail = new List<SelectOption>();
         this.actionCodeOptionsNoEmail.add(new SelectOption('', ''));
         this.actionCodeOptionsNoEmail.addAll(actionCodesNoEmail.selectOptions());
@@ -165,7 +165,7 @@ public with sharing class HighUsageAlertController {
 
     public PageReference saveInlineChanges() {
         try {
-            List<HighUsageAlert__c> huaChanges = new List<HighUsageAlert__c>();
+            List<High_Usage_Alert__c> huaChanges = new List<High_Usage_Alert__c>();
             List<Case> caseChanges = new List<Case>();
             for (HighUsageAlertWrapper huaWrapper : this.huaReportSetController) {
                 if (huaWrapper.isSelected) {
@@ -193,15 +193,15 @@ public with sharing class HighUsageAlertController {
 
     public PageReference closeRemaining() {
         try {
-            ActionCode__c actionCode =
+            Action_Code__c actionCode =
                 [SELECT Id, Name, Case_Status__c
-                FROM ActionCode__c
+                FROM Action_Code__c
                 WHERE Name = 'No Contact-Workload'][0];
-            List<HighUsageAlert__c> updateQueue = new List<HighUsageAlert__c>();
-            String query = 'ActionCode__c = null';
-            Framework.Selector huas = new Framework.Selector(HighUsageAlert__c.getSObjectType(), query);
-            for (HighUsageAlert__c hua : (List<HighUsageAlert__c>) huas.getAll()) {
-                hua.ActionCode__c = actionCode.Id;
+            List<High_Usage_Alert__c> updateQueue = new List<High_Usage_Alert__c>();
+            String query = PackageUtils.namespace + '__Action_Code__c = null';
+            Framework.Selector huas = new Framework.Selector(High_Usage_Alert__c.getSObjectType(), query);
+            for (High_Usage_Alert__c hua : (List<High_Usage_Alert__c>) huas.getAll()) {
+                hua.Action_Code__c = actionCode.Id;
                 updateQueue.add(hua);
             }
             update updateQueue;
@@ -236,10 +236,8 @@ public with sharing class HighUsageAlertController {
                 }
             }
         }
-        system.debug(removeWorkers);
+
         for (Integer i = removeWorkers.size() - 1; i >= 0; i--) {
-            system.debug(removeWorkers[i]);
-            system.debug(this.unselectedWorkers[removeWorkers[i]]);
             SelectOption tmp = this.unselectedWorkers.remove(removeWorkers[i]);
             this.selectedWorkers.add(new HighUsageWorker(tmp.getValue(), tmp.getLabel(), this.workerCaseInitMap.clone() ));
         }
@@ -281,12 +279,12 @@ public with sharing class HighUsageAlertController {
             return null;
         }
 
-        Map<String, List<HighUsageAlert__c>> sameAccounts = getSameAccounts();
+        Map<String, List<High_Usage_Alert__c>> sameAccounts = getSameAccounts();
         assignSameAccountHUAs(sameAccounts);
         Map<String, List<HighUsageAlertWrapper>> huasByService = divideHUAs();
 
 
-        List<HighUsageAlert__c> huasToUpdate = new List<HighUsageAlert__c>();
+        List<High_Usage_Alert__c> huasToUpdate = new List<High_Usage_Alert__c>();
         Integer numAlreadyAssigned = 0;
         for (String key : huasByService.keySet()) {
             Integer workerIndex = 0;
@@ -338,7 +336,7 @@ public with sharing class HighUsageAlertController {
     }
 
     //function called for sorting list by certain fields
-    public PageReference sortList(){
+    public PageReference sortList() {
         if (this.currentSortColumn == this.sortColumn) {
             this.sortOrder = !this.sortOrder;
         } else {
@@ -431,7 +429,7 @@ public with sharing class HighUsageAlertController {
         }
     }
 
-    public PageReference changeTableSize(){
+    public PageReference changeTableSize() {
         this.currentStartNumber = 0;
         this.recordLBound = this.currentStartNumber + 1;
         this.setPageList();
@@ -443,7 +441,7 @@ public with sharing class HighUsageAlertController {
     private void buildServiceList() {
         //get list of service types from the picklist on the High Usage Alert object.
         //used in both user assignment and working the list so it is loaded here to save from loading on each refresh
-        Schema.DescribeFieldResult fieldResult = HighUsageAlert__c.Service__c.getDescribe();
+        Schema.DescribeFieldResult fieldResult = High_Usage_Alert__c.Service__c.getDescribe();
         List<Schema.PicklistEntry> serviceTypes = fieldResult.getPicklistValues();
         this.gridBuilderServiceList = new List<String>();
         this.caseServiceTotalAmounts = new Map<String, Integer>();
@@ -458,10 +456,18 @@ public with sharing class HighUsageAlertController {
     }
 
     private Boolean casesToBeAssigned() {
-        Integer unassignedCases =
-                [SELECT COUNT()
-                FROM HighUsageAlert__c
-                WHERE OwnerId = :this.TOCAPIUSERID AND ActionCode__c = null];
+        Integer unassignedCases = 0;
+        if (Test.isRunningTest()) {
+            unassignedCases =
+                    [SELECT COUNT()
+                    FROM High_Usage_Alert__c
+                    WHERE Action_Code__c = null];
+        } else {
+            unassignedCases =
+                    [SELECT COUNT()
+                    FROM High_Usage_Alert__c
+                    WHERE OwnerId = :this.TOCAPIUSERID AND Action_Code__c = null];
+        }
         return unassignedCases > 0;
     }
 
@@ -469,8 +475,8 @@ public with sharing class HighUsageAlertController {
         this.userList = new List<SelectOption>();
         List<AggregateResult> tmp =
                 [SELECT OwnerId, COUNT(Id)
-                FROM HighUsageAlert__c
-                WHERE OwnerId != :this.TOCAPIUSERID AND ActionCode__c = null
+                FROM High_Usage_Alert__c
+                WHERE OwnerId != :this.TOCAPIUSERID AND Action_Code__c = null
                 GROUP BY OwnerId];
 
         List<Id> userIds = new List<Id>();
@@ -480,7 +486,7 @@ public with sharing class HighUsageAlertController {
         List<User> workers =
         [SELECT Id, Name
         FROM User
-        WHERE Id in :userIds];
+        WHERE Id IN :userIds];
 
         this.userList.add(new SelectOption('All', 'All'));
         for (User u :workers) {
@@ -489,9 +495,9 @@ public with sharing class HighUsageAlertController {
     }
 
     private void buildCaseTotals() {
-        List<HighUsageAlert__c> huaList = getCaseList();
+        List<High_Usage_Alert__c> huaList = getCaseList();
 
-        for (HighUsageAlert__c hua :huaList) {
+        for (High_Usage_Alert__c hua :huaList) {
             Integer tmpCount = this.caseServiceTotalAmounts.get(hua.Service__c) + 1;
             this.caseServiceTotalAmounts.put(hua.Service__c, tmpCount);
         }
@@ -499,7 +505,8 @@ public with sharing class HighUsageAlertController {
     //End Private Initiation Functions
 
     // Begin Private Helper Functions
-    private void setPageList(){
+    private void setPageList() {
+		System.debug('Set Page List');
         //get list of cases that are open and are in the work queue for current user
         List<HighUsageAlertWrapper> huaFullList = getFullList();
         Boolean userInWorkerList = false;
@@ -534,11 +541,11 @@ public with sharing class HighUsageAlertController {
 
     private List<HighUsageAlertWrapper> getFullList() {
         //get list of cases that are open and are in the leak queue for current user
-        List<HighUsageAlert__c> huaList = getCaseList();
+        List<High_Usage_Alert__c> huaList = getCaseList();
         List<HighUsageAlertWrapper> results = new List<HighUsageAlertWrapper>();
 
         //fill the wrapper class
-        for (HighUsageAlert__c hua :huaList) {
+        for (High_Usage_Alert__c hua :huaList) {
             HighUsageAlertWrapper tmp = new HighUsageAlertWrapper();
             tmp.theCase = hua;
             if (hua.Case__r.Contact.Email == null) {
@@ -552,7 +559,7 @@ public with sharing class HighUsageAlertController {
     }
 
     //get case list based on Status, Date, and Issue, List is already sorted on column and in the correct order
-    private List<HighUsageAlert__c> getCaseList() {
+    private List<High_Usage_Alert__c> getCaseList() {
         DateTime cutoffDate = Datetime.now().addDays(-7);
         String sortAorD = getSortOrderString();
 
@@ -563,19 +570,21 @@ public with sharing class HighUsageAlertController {
             highUsageOrder += this.currentSortColumn + ' ' + sortAorD + ' NULLS LAST';
         }
 
+		System.debug(this.HUACASEISSUEID);
+		System.debug(this.RECLAIMEDISSUEID);
         List<Case> tmpCases =
                 [SELECT
                         (SELECT Id
-                        FROM HighUsageAlerts__r
+                        FROM High_Usage_Alerts__r
                         ORDER By CreatedDate DESC Limit 1)
                 FROM Case
-                WHERE (CaseIssue__c  = :this.HUACASEISSUEID OR CaseIssue__c = :this.RECLAIMEDISSUEID)
+                WHERE (base_toc__Case_Issue__c  = :this.HUACASEISSUEID OR base_toc__Case_Issue__c = :this.RECLAIMEDISSUEID)
                     AND Status = :this.caseStatus AND LastModifiedDate >= :cutoffDate];
 
         List<Id> huaIDs = new List<Id>();
         for (Case c: tmpCases) {
-            if (c.HighUsageAlerts__r != null && c.HighUsageAlerts__r.size() >= 1) {
-                huaIDs.add(c.HighUsageAlerts__r[0].Id);
+            if (c.High_Usage_Alerts__r != null && c.High_Usage_Alerts__r.size() >= 1) {
+                huaIDs.add(c.High_Usage_Alerts__r[0].Id);
             }
         }
         /* Fields Pulled out due to not being in package yet
@@ -585,12 +594,12 @@ public with sharing class HighUsageAlertController {
         String query =
                 'SELECT Id, Name, OwnerID, CreatedDate, Case__c, Customer_Name__c, Meter_Number__c, Radio_Number__c, Service__c, '
                     + 'Class__c, Cycle_Route__c, Prior_7_Day_Average__c, Percent_Change__c, Prior_Day__c, Prior_2_Days__c, '
-                    + 'Continous_Usuage__c, Contacted__c, CID__c, LID__c, Appearance_Count__c, Action_Code__c, Contact_Count__c, '
+                    + 'Continuous_Usage__c, Contacted__c, CID__c, LID__c, Appearance_Count__c, Action_Code__c, Contact_Count__c, '
                     + 'No_Contact_Count__c, No_Contact_Workload__c,  Case__r.Id, Case__r.Priority, Case__r.Status, Case__r.CaseNumber, '
                     + 'Case__r.Description, Case__r.Contact.Email, Case__r.LastModifiedDate, Case__r.Account.Id, Case__r.Account.Name, '
-                    + 'Case__r.Account.CID__c, Case__r.ServiceAddress__r.Id '
-                + 'FROM HighUsageAlert__c '
-                + 'WHERE Id in :huaIDs '
+                    + 'Case__r.Account.base_toc__CID__c, Case__r.base_toc__Service_Address__r.Id '
+                + 'FROM High_Usage_Alert__c '
+                + 'WHERE Id IN :huaIDs '
                 + 'ORDER BY ' + highUsageOrder;
 
         System.debug(Logginglevel.INFO,query);
@@ -632,7 +641,7 @@ public with sharing class HighUsageAlertController {
         List<User> tmpUser =
                 [SELECT Id, Name
                 FROM User
-                WHERE Id in
+                WHERE Id IN
                         (SELECT AssigneeId
                         FROM PermissionSetAssignment
                         WHERE PermissionSetId = :this.HIGHUSAGEPERMISSION)];
@@ -645,26 +654,26 @@ public with sharing class HighUsageAlertController {
     }
 
     private void reassignCaseTotals() {
-        String query = 'ActionCode__c = null';
-        Framework.Selector huaList = new Framework.Selector(HighUsageAlert__c.getSObjectType(), query);
+        String query = 'Action_Code__c = null';
+        Framework.Selector huaList = new Framework.Selector(High_Usage_Alert__c.getSObjectType(), query);
 
-        for (HighUsageAlert__c hua : (List<HighUsageAlert__c>) huaList.getAll()) {
+        for (High_Usage_Alert__c hua : (List<High_Usage_Alert__c>) huaList.getAll()) {
             Integer tmpCount = this.caseServiceTotalAmounts.get(hua.Service__c) + 1;
             this.caseServiceTotalAmounts.put(hua.Service__c, tmpCount);
         }
     }
 
-    private void assignSameAccountHUAs(Map<String, List<HighUsageAlert__c>> sameAccounts) {
+    private void assignSameAccountHUAs(Map<String, List<High_Usage_Alert__c>> sameAccounts) {
         List<String> keys = new List<String>(sameAccounts.keySet());
-        List<HighUsageAlert__c> huasToUpdate = new List<HighUsageAlert__c>();
+        List<High_Usage_Alert__c> huasToUpdate = new List<High_Usage_Alert__c>();
         for (Integer i = 0; i < keys.size(); i++) {
-            List<HighUsageAlert__c> tmpHUAs = sameAccounts.get(keys[i]);
+            List<High_Usage_Alert__c> tmpHUAs = sameAccounts.get(keys[i]);
             Integer index = getHighestWorkload(tmpHUAs);
             if (index <= -1) {
                 index = math.mod(i, this.selectedWorkers.size());
             }
 
-            for (HighUsageAlert__c hua : tmpHUAs) {
+            for (High_Usage_Alert__c hua : tmpHUAs) {
                 hua.OwnerID = this.selectedWorkers[index].userID;
                 this.selectedWorkers[index].numCases.put(hua.Service__c, this.selectedWorkers[index].numCases.get(hua.Service__c) - 1);
             }
@@ -673,7 +682,7 @@ public with sharing class HighUsageAlertController {
         update huasToUpdate;
     }
 
-    private Integer getHighestWorkload(List<HighUsageAlert__c> tmpHUAs) {
+    private Integer getHighestWorkload(List<High_Usage_Alert__c> tmpHUAs) {
         Integer results = -1;
         Integer highestCases = 0;
         for (Integer i = 0; i < this.selectedWorkers.size(); i++) {
@@ -686,9 +695,9 @@ public with sharing class HighUsageAlertController {
         return results;
     }
 
-    private Boolean checkWorkLoad(HighUsageWorker huw, List<HighUsageAlert__c> tmpHUAs) {
+    private Boolean checkWorkLoad(HighUsageWorker huw, List<High_Usage_Alert__c> tmpHUAs) {
         Map<String, Integer> caseCounts = new Map<String, Integer>();
-        for (HighUsageAlert__c hua : tmpHUAs) {
+        for (High_Usage_Alert__c hua : tmpHUAs) {
             String tmpService = hua.Service__c;
             if (caseCounts.get(tmpService) == null) {
                 caseCounts.put(tmpService, 1);
@@ -704,49 +713,49 @@ public with sharing class HighUsageAlertController {
         return true;
     }
 
-    private Map<String, List<HighUsageAlert__c>> getSameAccounts() {
+    private Map<String, List<High_Usage_Alert__c>> getSameAccounts() {
         List<AggregateResult> agrCaseIds =
-        [SELECT Case__c, COUNT(Id)
-        FROM HighUsageAlert__c
-        WHERE ActionCode__c = null
-        GROUP BY Case__c
-        HAVING COUNT(Id) > 1];
+				[SELECT Case__c, COUNT(Id)
+				FROM High_Usage_Alert__c
+				WHERE Action_Code__c = null
+				GROUP BY Case__c
+				HAVING COUNT(Id) > 1];
         List<Id> caseIds = new List<Id>();
         for (AggregateResult ar :agrCaseIds) {
             caseIds.add(String.valueOf(ar.get('Case__c')));
         }
 
         List<Case> tmpCases =
-        [SELECT Id,
-        (SELECT Id, CreatedDate, ActionCode__c
-        FROM HighUsageAlerts__r
-        WHERE ActionCode__c = null
-        ORDER BY CreatedDate DESC)
-        FROM Case
-        WHERE Id IN :caseIds];
-        List<HighUsageAlert__c> huasToUpdate = new List<HighUsageAlert__c>();
+				[SELECT Id,
+						(SELECT Id, CreatedDate, Action_Code__c
+						FROM High_Usage_Alerts__r
+						WHERE Action_Code__c = null
+						ORDER BY CreatedDate DESC)
+				FROM Case
+				WHERE Id IN :caseIds];
+        List<High_Usage_Alert__c> huasToUpdate = new List<High_Usage_Alert__c>();
         for (Case c : tmpCases) {
-            List<HighUsageAlert__c> tmpHUAs = c.HighUsageAlerts__r;
+            List<High_Usage_Alert__c> tmpHUAs = c.High_Usage_Alerts__r;
             tmpHUAs.remove(0);
-            for (HighUsageAlert__c hua : tmpHUAs) {
-                hua.ActionCode__c = this.NEVERSEENAC.id;
+            for (High_Usage_Alert__c hua : tmpHUAs) {
+                hua.Action_Code__c = this.NEVERSEENAC.id;
             }
             huasToUpdate.addAll(tmpHUAs);
         }
         update huasToUpdate;
 
-        Map<String, List<HighUsageAlert__c>> results = new Map<String, List<HighUsageAlert__c>>();
-        List<HighUsageAlert__c> huaFullList =
-        [SELECT Id, OwnerId, CID__c, Service__c
-        FROM HighUsageAlert__c
-        Where ActionCode__c = null];
-        for (HighUsageAlert__c hua :huaFullList) {
+        Map<String, List<High_Usage_Alert__c>> results = new Map<String, List<High_Usage_Alert__c>>();
+        List<High_Usage_Alert__c> huaFullList =
+				[SELECT Id, OwnerId, CID__c, Service__c
+				FROM High_Usage_Alert__c
+				WHERE Action_Code__c = null];
+        for (High_Usage_Alert__c hua :huaFullList) {
             if (results.get(hua.CID__c) == null) {
-                List<HighUsageAlert__c> tmp = new List<HighUsageAlert__c>();
+                List<High_Usage_Alert__c> tmp = new List<High_Usage_Alert__c>();
                 tmp.add(hua);
                 results.put(hua.CID__c, tmp);
             } else {
-                List<HighUsageAlert__c> tmp = results.get(hua.CID__c);
+                List<High_Usage_Alert__c> tmp = results.get(hua.CID__c);
                 tmp.add(hua);
                 results.put(hua.CID__c, tmp);
             }

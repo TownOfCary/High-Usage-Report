@@ -5,7 +5,7 @@
 global class HighUsageAlertWrapper {
 
     public Boolean isSelected { get; set; }
-    public HighUsageAlert__c theCase { get; set; }
+    public High_Usage_Alert__c theCase { get; set; }
     public List<SelectOption> actionCodes { get; set; }
 
     public HighUsageAlertWrapper() {

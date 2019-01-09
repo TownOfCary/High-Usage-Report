@@ -158,10 +158,10 @@
 				    <apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.CID__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.CID__c.Label}" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.CID__c" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.CID__c" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
@@ -171,23 +171,23 @@
 					<apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.LID__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.LID__c.Label}" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.LID__c" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.LID__c" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
 						</apex:facet>
-						<a href="/{!wrapper.theCase.Case__r.ServiceAddress__r.Id}" id="{!wrapper.theCase.Case__r.ServiceAddress__r.Id}" target="popup" onclick="window.open('/{!wrapper.theCase.Case__r.ServiceAddress__r.Id}','popup','menubar=no,width=430,height=360,toolbar=no');" onblur="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.ServiceAddress__r.Id}').hide();" onfocus="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.ServiceAddress__r.Id}', '/{!wrapper.theCase.Case__r.ServiceAddress__r.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.ServiceAddress__r.Id}&isAjaxRequest=1').show();" onmouseout="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.ServiceAddress__r.Id}').hide();" onmouseover="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.ServiceAddress__r.Id}', '/{!wrapper.theCase.Case__r.ServiceAddress__r.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.ServiceAddress__r.Id}&isAjaxRequest=1').show();">{!wrapper.theCase.LID__C}</a>
+						<a href="/{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}" id="{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}" target="popup" onclick="window.open('/{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}','popup','menubar=no,width=430,height=360,toolbar=no');" onblur="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}').hide();" onfocus="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}', '/{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}&isAjaxRequest=1').show();" onmouseout="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}').hide();" onmouseover="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}', '/{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}&isAjaxRequest=1').show();">{!wrapper.theCase.LID__C}</a>
 					</apex:column>
 					<apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Customer_Name__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Customer_Name__c.Label}" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.Customer_Name__c" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Customer_Name__c" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
@@ -196,7 +196,7 @@
 					</apex:column>
 					<apex:column >
 						<apex:facet name="header">
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Meter_Number__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Meter_Number__c.Label}" />
 						</apex:facet>
 						<a href="/apex/AquastarMeterRead?meterNumber={!wrapper.theCase.Meter_Number__c}" id="{/apex/AquastarMeterRead?meterNumber=!wrapper.theCase.Meter_Number__c}" target="popup" onclick="window.open('/apex/AquastarMeterRead?meter_number={!wrapper.theCase.Meter_Number__c}','popup','menubar=no,width=560,height=875,toolbar=no,scrollbars=yes');">
 							<apex:outputText value="{!wrapper.theCase.Meter_Number__c}" />
@@ -205,7 +205,7 @@
 					<apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Service__c.Label}" /><br/>
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Service__c.Label}" /><br/>
 							<apex:selectList value="{!serviceSearch}" multiselect="false" size="1">
 								<apex:actionSupport event="onchange" action="{!searchService}" rerender="huaTable"/>
 								<apex:selectOptions value="{!serviceSearchOptions}" />
@@ -217,10 +217,10 @@
 					<apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Appearance_Count__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Appearance_Count__c.Label}" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.Appearance_Count__c" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Appearance_Count__c" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
@@ -230,10 +230,10 @@
 					<apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Class__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Class__c.Label}" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.Class__c" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Class__c" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
@@ -243,10 +243,10 @@
 					<apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Cycle_Route__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Cycle_Route__c.Label}" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.Cycle_Route__c" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Cycle_Route__c" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
@@ -256,10 +256,10 @@
 					<apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Prior_Day__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Prior_Day__c.Label}" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.Prior_Day__c" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Prior_Day__c" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
@@ -271,10 +271,10 @@
 					<apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Prior_7_Day_Average__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Prior_7_Day_Average__c.Label}" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.Prior_7_Day_Average__c" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Prior_7_Day_Average__c" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
@@ -286,10 +286,10 @@
 					<apex:column >
 						<apex:facet name="header">
 							<apex:actionRegion >
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Percent_Change__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Percent_Change__c.Label}" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.Percent_Change__c" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Percent_Change__c" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
@@ -298,7 +298,7 @@
 					</apex:column>
 					<apex:column >
 						<apex:facet name="header">
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.Continuous_Usage__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Continuous_Usage__c.Label}" />
 						</apex:facet>
 						<apex:outputText value="{!wrapper.theCase.Continuous_Usage__c}" />
 					</apex:column>
@@ -308,7 +308,7 @@
 							<apex:outputText value="Alert ID" />
 							<apex:image value="/img/move_down.gif">
 								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
-									<apex:param name="sortBy" value="HighUsageAlert__c.Name" assignTo="{!sortColumn}" />
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Name" assignTo="{!sortColumn}" />
 								</apex:actionSupport>
 							</apex:image>
 							</apex:actionRegion>
@@ -338,9 +338,9 @@
 					</apex:column>
 					<apex:column styleClass="editCol">
 						<apex:facet name="header">
-							<apex:outputText styleClass="header" value="{!$ObjectType.HighUsageAlert__c.Fields.ActionCode__c.Label}" />
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Action_Code__c.Label}" />
 						</apex:facet>
-						<apex:selectList value="{!wrapper.theCase.ActionCode__c}" multiselect="false" size="1">
+						<apex:selectList value="{!wrapper.theCase.Action_Code__c}" multiselect="false" size="1">
 							<apex:selectOptions value="{!wrapper.actionCodes}" />
 						</apex:selectList>
 					</apex:column>

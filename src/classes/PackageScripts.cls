@@ -157,7 +157,7 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
             */
 
             Framework.RegisteredObject obj1 = new Framework.RegisteredObject();
-            obj1.sObjectName = Framework.SchemaService.getDescribe(HighUsageAlert__c.SObjectType).getName();
+            obj1.sObjectName = Framework.SchemaService.getDescribe(High_Usage_Alert__c.SObjectType).getName();
             obj1.apexClass = HighUsageAlerts.class.getName();
             obj1.namespace = PackageUtils.namespace;
             obj1.isEnabled = true;
@@ -168,7 +168,7 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
             regObjects.add(obj1);
 
             /*Framework.RegisteredObject obj2 = new Framework.RegisteredObject();
-            obj2.sObjectName = Framework.SchemaService.getDescribe(ActionCode__c.SObjectType).getName();
+            obj2.sObjectName = Framework.SchemaService.getDescribe(Action_Code__c.SObjectType).getName();
             //obj2.apexClass = HighUsageAlerts.class.getName();
             obj2.namespace = PackageUtils.namespace;
             obj2.isEnabled = true;
@@ -190,7 +190,7 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
 //            huaRule.apexClass = HighUsageAlerts.class.getName();
 //            huaRule.namespace = PackageUtils.namespace;
 //            huaRule.isEnabled = true;
-//            huaRule.sObjectName = SObjectType.HighUsageAlert__c.getName();
+//            huaRule.sObjectName = SObjectType.High_Usage_Alert__c.getName();
 //            huaRule.executionOrder = 0;
 //            rules.add(huaRule);
 
@@ -249,32 +249,32 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
             Framework.Selector caseIssues = new Framework.Selector(base_toc__Case_Issue__c.getSObjectType(), query);
             delete caseIssues.getAll();
 
-            List<base_toc__Case_Issue__c> newIssues = new List<Case_Issue__c>();
+            List<base_toc__Case_Issue__c> newIssues = new List<base_toc__Case_Issue__c>();
             newIssues.add(new base_toc__Case_Issue__c(
                     Name = this.HIGHUSAGEISSUE,
                     base_toc__Priority__c = 'Medium',
                     base_toc__Visibility__c = 'ToC Internal'
             ));
 
-            newIssues.add(new Case_Issue__c(
-                Name = this.RWHIGHUSAGEISSUE,
-                Priority__c = 'Medium',
-                Visibility__c = 'ToC Internal'
+            newIssues.add(new base_toc__Case_Issue__c(
+                    Name = this.RWHIGHUSAGEISSUE,
+                    base_toc__Priority__c = 'Medium',
+                    base_toc__Visibility__c = 'ToC Internal'
             ));
 
             insert newIssues;
 
             String query2 = 'Name = \'' + this.NEVERSEEN + '\' OR Name = \'' + this.WORKLOAD + '\'';
-            Framework.Selector actionCodes = new Framework.Selector(ActionCode__c.getSObjectType(), query);
+            Framework.Selector actionCodes = new Framework.Selector(Action_Code__c.getSObjectType(), query2);
             delete actionCodes.getAll();
 
-            List<ActionCode__c> newCodes = new List<ActionCode__c>();
-            newCodes.add(new ActionCode__c(
+            List<Action_Code__c> newCodes = new List<Action_Code__c>();
+            newCodes.add(new Action_Code__c(
                 Name = this.NEVERSEEN,
                 Case_Status__c = 'New'
             ));
 
-            newCodes.add(new ActionCode__c(
+            newCodes.add(new Action_Code__c(
                 Name = this.WORKLOAD,
                 Case_Status__c = 'On Hold',
                 Send_Email__c = true,

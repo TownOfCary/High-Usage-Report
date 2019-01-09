@@ -32,39 +32,39 @@
         <members>ActionCode__c.Send_Email__c</members>
         <members>ActionCode__c.Work_Order__c</members>
         <members>ActionCode__c.Work_Type__c</members>
-        <members>HighUsageAlert__c.Account_Service__c</members>
-        <members>HighUsageAlert__c.ActionCode__c</members>
-        <members>HighUsageAlert__c.Appearance_Count__c</members>
-        <members>HighUsageAlert__c.CID__c</members>
-        <members>HighUsageAlert__c.Case__c</members>
-        <members>HighUsageAlert__c.Class__c</members>
-        <members>HighUsageAlert__c.Contact_Count__c</members>
-        <members>HighUsageAlert__c.Contacted__c</members>
-        <members>HighUsageAlert__c.Continuous_Usage__c</members>
-        <members>HighUsageAlert__c.Customer_Name__c</members>
-        <members>HighUsageAlert__c.Cycle_Route__c</members>
-        <members>HighUsageAlert__c.Hourly_Usage__c</members>
-        <members>HighUsageAlert__c.LID__c</members>
-        <members>HighUsageAlert__c.Meter_Number__c</members>
-        <members>HighUsageAlert__c.No_Contact_Count__c</members>
-        <members>HighUsageAlert__c.No_Contact_Workload__c</members>
-        <members>HighUsageAlert__c.Percent_Change__c</members>
-        <members>HighUsageAlert__c.Prior_2_Days__c</members>
-        <members>HighUsageAlert__c.Prior_7_Day_Average__c</members>
-        <members>HighUsageAlert__c.Prior_Day__c</members>
-        <members>HighUsageAlert__c.Radio_Number__c</members>
-        <members>HighUsageAlert__c.Service__c</members>
-        <members>HighUsageAlert__c.UNIQUE_ID__c</members>
+        <members>High_Usage_Alert__c.Account_Service__c</members>
+        <members>High_Usage_Alert__c.ActionCode__c</members>
+        <members>High_Usage_Alert__c.Appearance_Count__c</members>
+        <members>High_Usage_Alert__c.CID__c</members>
+        <members>High_Usage_Alert__c.Case__c</members>
+        <members>High_Usage_Alert__c.Class__c</members>
+        <members>High_Usage_Alert__c.Contact_Count__c</members>
+        <members>High_Usage_Alert__c.Contacted__c</members>
+        <members>High_Usage_Alert__c.Continuous_Usage__c</members>
+        <members>High_Usage_Alert__c.Customer_Name__c</members>
+        <members>High_Usage_Alert__c.Cycle_Route__c</members>
+        <members>High_Usage_Alert__c.Hourly_Usage__c</members>
+        <members>High_Usage_Alert__c.LID__c</members>
+        <members>High_Usage_Alert__c.Meter_Number__c</members>
+        <members>High_Usage_Alert__c.No_Contact_Count__c</members>
+        <members>High_Usage_Alert__c.No_Contact_Workload__c</members>
+        <members>High_Usage_Alert__c.Percent_Change__c</members>
+        <members>High_Usage_Alert__c.Prior_2_Days__c</members>
+        <members>High_Usage_Alert__c.Prior_7_Day_Average__c</members>
+        <members>High_Usage_Alert__c.Prior_Day__c</members>
+        <members>High_Usage_Alert__c.Radio_Number__c</members>
+        <members>High_Usage_Alert__c.Service__c</members>
+        <members>High_Usage_Alert__c.UNIQUE_ID__c</members>
         <name>CustomField</name>
     </types>
     <types>
         <members>ActionCode__c</members>
-        <members>HighUsageAlert__c</members>
+        <members>High_Usage_Alert__c</members>
         <name>CustomObject</name>
     </types>
     <types>
         <members>ActionCode__c-Action Code Layout</members>
-        <members>HighUsageAlert__c-High Usage Alert Layout</members>
+        <members>High_Usage_Alert__c-High Usage Alert Layout</members>
         <name>Layout</name>
     </types>
     <types>
@@ -73,7 +73,7 @@
     </types>
     <types>
         <members>ActionCode__c.All</members>
-        <members>HighUsageAlert__c.All</members>
+        <members>High_Usage_Alert__c.All</members>
         <name>ListView</name>
     </types>
     <types>
