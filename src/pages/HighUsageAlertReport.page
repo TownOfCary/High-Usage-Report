@@ -1,0 +1,426 @@
+<!--
+ - Created by byarsawi on 5/14/2018.
+ -->
+<apex:page docType="html-5.0" controller="HighUsageAlertController" sidebar="false">
+    <apex:includeScript value="{!URLFOR($Resource.jquery_3_1_0_min)}" />
+    <apex:includeScript value="{!URLFOR($Resource.colResizable)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.HighUsageReportStylesheet)}"/>
+    <apex:form id="form1">
+        <apex:messages />
+        <apex:actionStatus id="busyCursor" onStart="busyCursorOn()" onStop="busyCursorOff()"/>
+        <apex:pageBlock title="High Usage Report">
+            <apex:pageBlockButtons location="top" rendered="{!casesAssigned}">
+                <apex:outputLabel value="User: " for="userList"/>
+                <apex:selectList size="1" id="userList" value="{!theUserId}">
+                    <apex:actionSupport event="onchange" action="{!changeCaseList}" rerender="huaTable" />
+                    <apex:selectOptions value="{!userList}" />
+                </apex:selectList>
+                <apex:outputLabel value="Case Type: " for="caseStatus"/>
+                <apex:selectList size="1" id="caseStatus" value="{!caseStatus}">
+                    <apex:actionSupport event="onchange" action="{!changeCaseList}" rerender="huaTable" />
+                    <apex:selectOptions value="{!caseStatusList}"/>
+                </apex:selectList>
+                <apex:commandButton action="{!saveInlineChanges}" id="saveInlineChanges" reRender="huaTable" value="Save"/>
+                <apex:commandButton onclick="resetInlineEdit()" id="cancelButton" value="Cancel"/>
+                <apex:commandButton action="{!closeRemaining}" id="closeRemainingButton" value="Close Remaining Alerts" />
+                <apex:commandButton action="{!reassignWorkers}" id="reassignWorkersButton" value="Reassign Workers" />
+            </apex:pageBlockButtons>
+            <apex:pageBlockButtons location="bottom" rendered="{!casesAssigned}">
+                <apex:commandButton action="{!saveInlineChanges}" id="saveInlineChanges" reRender="huaTable" value="Save"/>
+                <apex:commandButton onclick="resetInlineEdit()" id="cancelButton" value="Cancel"/>
+                <apex:commandButton action="{!closeRemaining}" id="closeRemainingButton" value="Close Remaining Alerts" />
+                <apex:commandButton action="{!reassignWorkers}" id="reassignWorkersButton" value="Reassign Workers" />
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection columns="1" title="Select Working Users" id="workerSelection" rendered="{!(casesAssigned == false)}">
+                <!-- button commands to be linked to functions in controller -->
+                <apex:actionFunction name="rightArrow" action="{!doSelect}" reRender="selectionBlock"/>
+                <apex:actionFunction name="leftArrow" action="{!doUnselect}" reRender="selectionBlock"/>
+                <apex:panelGrid columns="3"  id="selectionBlock">
+                    <!-- The Unselected Values Select List -->
+                    <apex:selectList id="unselected_list" required="false" value="{!workersToAdd}" multiselect="true" size="15" style="width:250px">
+                        <apex:selectOptions value="{!unselectedWorkers}"/>
+                    </apex:selectList>
+
+                    <!-- The Left and Right Buttons -->
+                    <apex:panelGroup layout="block" style="text-align: center; padding:10px;">
+                        Add<br/>
+                        <a href="javascript:rightArrow();" style="text-decoration:none">
+                            <img src="/s.gif" alt="Select" class="rightArrowIcon" title="Select"/>
+                        </a><br/>
+                        <a href="javascript:leftArrow();" style="text-decoration:none">
+                            <img src="/s.gif" alt="Unselect" class="leftArrowIcon" title="Unselect"/>
+                        </a><br/>
+                        Remove<br/>
+                    </apex:panelGroup>
+
+                    <!-- The Selected Items List -->
+                    <apex:dataTable value="{!selectedWorkers}" rows="15" styleClass="selected_list" rowClasses="selected_list_row" columnClasses="selected_list_column" var="worker" id="selected_list">
+                        <apex:inlineEditSupport showOnEdit="saveButton, cancelButton" event="ondblclick" changedStyleClass="myBoldClass" resetFunction="resetInlineEdit"/>
+                        <apex:column headerClass="selected_list_header" footerClass="selected_list_header">
+                            <apex:facet name="header">Name</apex:facet>
+                            <apex:outputText value="{!worker.userName}"/>
+                        </apex:column>
+                        <apex:repeat value="{!caseServiceTotalAmounts}" var="service">
+                            <apex:column headerClass="selected_list_header" footerClass="selected_list_header">
+                                <apex:facet name="header">"{!service}" Cases</apex:facet>
+                                <apex:facet name="footer">total: {!caseServiceTotalAmounts[service]}</apex:facet>
+                                <apex:repeat value="{!worker.numCases}" var="workerService">
+                                    <apex:inputText styleClass="selected_list_input selected_{!workerService}" rendered="{!workerService == service}" value="{!worker.numCases[workerService]}" html-min="0" html-data-max-cases="{!caseServiceTotalAmounts[service]}"/>
+                                </apex:repeat>
+                            </apex:column>
+                        </apex:repeat>
+                        <apex:column styleClass="selected_checkbox">
+                            <apex:inputCheckbox styleClass="selchk" value="{!worker.isSelected}" />
+                        </apex:column>
+                    </apex:dataTable>
+                    <script type="text/javascript">
+	                	(function($){
+							$(".selected_list_input").click(function(e){
+								e.stopPropagation();
+							});
+							$(".selected_list_column").on('click', function(){
+								if($(this).closest('tr').hasClass("unselect_row")){
+									$(this).closest('tr').removeClass("unselect_row");
+									$(this).closest('tr').find('td[class$="selected_checkbox"] input[class$="selchk"]').prop('checked', false);
+								} else {
+									$(this).closest('tr').addClass("unselect_row");
+									$(this).closest('tr').find('td[class$="selected_checkbox"] input[class$="selchk"]').prop('checked', true);
+								}
+							});
+						})(jQuery);
+						function splitCases () {
+							console.log('in splitCases');
+							var serviceList = new Array();
+							console.log({!gridBuilderServiceList});
+							serviceList = {!gridBuilderServiceList};
+							console.log(serviceList);
+							$.each(serviceList, function(index, value){
+								var serviceType = ".selected_" + value;
+								console.log($(serviceType)[0].getAttribute('data-max-cases'));
+								splitColumn(serviceType, $(serviceType)[0].getAttribute('data-max-cases'));
+							});
+						}
+
+						var busyCursorOn = function() {
+							$('.button').attr("disabled", "disabled");
+							$('body').addClass('wait');
+						};
+
+						var busyCursorOff = function() {
+							$('.button').removeAttr('disabled');
+							$('body').removeClass('wait');
+						};
+
+						function splitColumn (colClass, totalCases) {
+							var zeroBoxes = new Array();
+							var assignedCases = 0;
+							$(colClass).each(function(){
+								if(parseInt($(this).val()) > 0){
+									assignedCases += parseInt($(this).val());
+								} else {
+									zeroBoxes.push($(this));
+								}
+							});
+							if(zeroBoxes.length == 0 && totalCases > assignedCase){
+
+							}
+							var remainingCases = totalCases - assignedCases;
+							var remainder = remainingCases % zeroBoxes.length;
+							for(var i = remainder; i > 0; i--){
+								zeroBoxes[i].attr('value', 1);
+								remainingCases--;
+							}
+							for(var i = 0; i < zeroBoxes.length; i++){
+								zeroBoxes[i].attr('value', parseInt(zeroBoxes[i].val()) + (remainingCases / zeroBoxes.length));
+							}
+						}
+					</script>
+                </apex:panelGrid>
+                <apex:panelGrid columns="1">
+                    <apex:commandButton action="{!saveWorkerInfo}" id="saveWorkerInfo" reRender="form1" value="Save" status="busyCursor"/>
+                    <apex:commandButton onClick="splitCases()" id="evenSplit" reRender="workerSelection" value="Split Work Evenly"/>
+                </apex:panelGrid>
+            </apex:pageBlockSection>
+            <apex:pageBlockSection columns="1" id="huaTable" rendered="{!casesAssigned}">
+				<span id="spanHUAs">
+				<apex:pageblocktable value="{!huaReportSetController}" id="tblHUAs" var="wrapper" title="High Usage Report" headerClass="header">
+					<apex:inlineEditSupport showOnEdit="saveButton, cancelButton" event="ondblclick" changedStyleClass="myBoldClass" resetFunction="resetInlineEdit"/>
+				    <apex:column styleClass="sel">
+				    	<apex:facet name="header">
+				    		<apex:actionRegion >
+					    		<apex:inputCheckbox id="selectAll" value="{!selected}">
+					    			<apex:actionSupport event="onchange" action="{!selectAll}" rerender="huaTable"/>
+					    		</apex:inputCheckbox>
+				    		</apex:actionRegion>
+				    	</apex:facet>
+				    	<apex:inputCheckbox styleClass="selchk" value="{!wrapper.isSelected}"/>
+				    </apex:column>
+				    <apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.CID__c.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.CID__c" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<a href="/{!wrapper.theCase.Case__r.Account.Id}" id="{!wrapper.theCase.Case__r.Account.Id}" target="popup" onclick="window.open('/{!wrapper.theCase.Case__r.Account.Id}','popup','menubar=no,width=430,height=360,toolbar=no');" onblur="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.Account.Id}').hide();" onfocus="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.Account.Id}', '/{!wrapper.theCase.Case__r.Account.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.Account.Id}&isAjaxRequest=1').show();" onmouseout="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.Account.Id}').hide();" onmouseover="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.Account.Id}', '/{!wrapper.theCase.Case__r.Account.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.Account.Id}&isAjaxRequest=1').show();">{!wrapper.theCase.CID__c}</a>
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.LID__c.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.LID__c" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<a href="/{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}" id="{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}" target="popup" onclick="window.open('/{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}','popup','menubar=no,width=430,height=360,toolbar=no');" onblur="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}').hide();" onfocus="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}', '/{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}&isAjaxRequest=1').show();" onmouseout="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}').hide();" onmouseover="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}', '/{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.base_toc__Service_Address__r.Id}&isAjaxRequest=1').show();">{!wrapper.theCase.LID__C}</a>
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Customer_Name__c.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Customer_Name__c" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<apex:outputText value="{!wrapper.theCase.Customer_Name__c}" />
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Meter_Number__c.Label}" />
+						</apex:facet>
+						<a href="/apex/AquastarMeterRead?meterNumber={!wrapper.theCase.Meter_Number__c}" id="{/apex/AquastarMeterRead?meterNumber=!wrapper.theCase.Meter_Number__c}" target="popup" onclick="window.open('/apex/AquastarMeterRead?meter_number={!wrapper.theCase.Meter_Number__c}','popup','menubar=no,width=560,height=875,toolbar=no,scrollbars=yes');">
+							<apex:outputText value="{!wrapper.theCase.Meter_Number__c}" />
+						</a>
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Service__c.Label}" /><br/>
+							<apex:selectList value="{!serviceSearch}" multiselect="false" size="1">
+								<apex:actionSupport event="onchange" action="{!searchService}" rerender="huaTable"/>
+								<apex:selectOptions value="{!serviceSearchOptions}" />
+							</apex:selectList>
+							</apex:actionRegion>
+						</apex:facet>
+						<apex:outputText value="{!wrapper.theCase.Service__c}" />
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Appearance_Count__c.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Appearance_Count__c" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<apex:outputText value="{!wrapper.theCase.Appearance_Count__c}" />
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Class__c.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Class__c" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<apex:outputText value="{!wrapper.theCase.Class__c}" />
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Cycle_Route__c.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Cycle_Route__c" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<apex:outputText value="{!wrapper.theCase.Cycle_Route__c}" />
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Prior_Day__c.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Prior_Day__c" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<apex:outputText value="{0, number, 00.00}" >
+							<apex:param value="{!wrapper.theCase.Prior_Day__c}" />
+						</apex:outputText>
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Prior_7_Day_Average__c.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Prior_7_Day_Average__c" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<apex:outputText value="{0, number, 00.00}" >
+							<apex:param value="{!wrapper.theCase.Prior_7_Day_Average__c}" />
+						</apex:outputText>
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Percent_Change__c.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Percent_Change__c" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<apex:outputText value="{!wrapper.theCase.Percent_Change__c}" />
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Continuous_Usage__c.Label}" />
+						</apex:facet>
+						<apex:outputText value="{!wrapper.theCase.Continuous_Usage__c}" />
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText value="Alert ID" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="High_Usage_Alert__c.Name" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<a href="/{!wrapper.theCase.Id}" id="{!wrapper.theCase.Id}" target="popup" onclick="window.open('/{!wrapper.theCase.Id}','popup','menubar=no,width=430,height=360,toolbar=no');" onblur="LookupHoverDetail.getHover('{!wrapper.theCase.Id}').hide();" onfocus="LookupHoverDetail.getHover('{!wrapper.theCase.Id}', '/{!wrapper.theCase.Id}/m?retURL=%2F{!wrapper.theCase.Id}&isAjaxRequest=1').show();" onmouseout="LookupHoverDetail.getHover('{!wrapper.theCase.Id}').hide();" onmouseover="LookupHoverDetail.getHover('{!wrapper.theCase.Id}', '/{!wrapper.theCase.Id}/m?retURL=%2F{!wrapper.theCase.Id}&isAjaxRequest=1').show();">{!wrapper.theCase.Name}</a>
+					</apex:column>
+					<apex:column styleClass="editCol" >
+						<apex:facet name="header">
+							<apex:outputText styleClass="header" value="{!$ObjectType.Case.Fields.Description.Label}" />
+						</apex:facet>
+						<span class="descriptionField">
+							<apex:outputField value="{!wrapper.theCase.Case__r.Description} " />
+						</span>
+					</apex:column>
+					<apex:column >
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="{!$ObjectType.Case.Fields.CaseNumber.Label}" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="Case__r.CaseNumber" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<a href="/{!wrapper.theCase.Case__r.Id}" id="{!wrapper.theCase.Case__r.Id}" target="popup" onclick="window.open('/{!wrapper.theCase.Case__r.Id}','popup','menubar=no,width=430,height=360,toolbar=no');" onblur="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.Id}').hide();" onfocus="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.Id}', '/{!wrapper.theCase.Case__r.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.Id}&isAjaxRequest=1').show();" onmouseout="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.Id}').hide();" onmouseover="LookupHoverDetail.getHover('{!wrapper.theCase.Case__r.Id}', '/{!wrapper.theCase.Case__r.Id}/m?retURL=%2F{!wrapper.theCase.Case__r.Id}&isAjaxRequest=1').show();">{!wrapper.theCase.Case__r.CaseNumber}</a>
+					</apex:column>
+					<apex:column styleClass="editCol">
+						<apex:facet name="header">
+							<apex:outputText styleClass="header" value="{!$ObjectType.High_Usage_Alert__c.Fields.Action_Code__c.Label}" />
+						</apex:facet>
+						<apex:selectList value="{!wrapper.theCase.Action_Code__c}" multiselect="false" size="1">
+							<apex:selectOptions value="{!wrapper.actionCodes}" />
+						</apex:selectList>
+					</apex:column>
+
+
+
+                    <!-- Columns that may not be needed anymore.
+					<apex:column styleClass="editCol">
+						<apex:facet name="header">
+							<apex:actionRegion >
+							<apex:outputText styleClass="header" value="Case Priority" />
+							<apex:image value="/img/move_down.gif">
+								<apex:actionSupport event="onclick" action="{!sortList}" rerender="huaTable">
+									<apex:param name="sortBy" value="Case,Priority" assignTo="{!sortColumn}" />
+								</apex:actionSupport>
+							</apex:image>
+							</apex:actionRegion>
+						</apex:facet>
+						<apex:outputfield value="{!wrapper.theCase.Priority}" />
+					</apex:column>
+
+					-->
+				</apex:pageblocktable>
+				</span>
+                <apex:outputPanel rendered="{!casesAssigned}">
+                    <apex:commandButton value="<<Previous" action="{!previous}" rendered="{!hasPrevious}" reRender="huaTable" />
+                    <apex:commandButton value="Next >>" action="{!next}" rendered="{!hasNext}" reRender="huaTable" />
+                    <apex:selectList size="1" id="displayNumber" value="{!displayAmount}">
+                        <apex:actionSupport event="onchange" action="{!changeTableSize}" rerender="huaTable" />
+                        <apex:selectOptions value="{!rowAmount}"/>
+                    </apex:selectList>
+                    Displaying Records {!recordLBound} to {!recordUBound} out of {!totalCasesForPagination}
+                </apex:outputPanel>
+
+                <!-- Script needs to be inside the rerendered portion of the page or it will not work if user rerenders the page with
+                        a change to an editable field or with saving changes. -->
+                <script type="text/javascript">
+					(function($){
+						$(".editCol").change(function(e){
+							$(this).closest('tr').find('td[class$="sel"] input[class$="selchk"]').prop('checked', true);
+						});
+						$('.descriptionField :hidden').change(function(e){
+							console.log('firing');
+							$(this).closest('tr').find('td[class$="sel"] input[class$="selchk"]').prop('checked', true);
+						});
+						$("[id$=tblHUAs]").colResizable({
+							disable: true
+						});
+						$("[id$=tblHUAs]").colResizable({
+							liveDrag: true,
+							draggingClass: 'dragging',
+							resizeMode: 'flex'
+						});
+
+						var targetNodes         = $('.descriptionField');
+						var MutationObserver    = window.MutationObserver || window.WebKitMutationObserver;
+						var myObserver          = new MutationObserver (mutationHandler);
+						var obsConfig           = { attributes: true, subtree: true };
+
+						//--- Add a target node to the observer. Can only add one node at a time.
+						targetNodes.each ( function () {
+						    myObserver.observe (this, obsConfig);
+						} );
+
+						function mutationHandler (mutationRecords) {
+						    console.info ("mutationHandler:");
+
+						    mutationRecords.forEach ( function (mutation) {
+
+						        if (mutation.type == "attributes") {
+						        	var jqTarget = $(mutation.target);
+						        	if ( jqTarget.parents('.descriptionField').length > 0 && jqTarget.is('input') && jqTarget.attr('name') != "null" ) {
+					            		jqTarget.closest('tr').find('td[class$="sel"] input[class$="selchk"]').prop('checked', true);
+						            }
+						        }
+						    } );
+						}
+					})(jQuery);
+				</script>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

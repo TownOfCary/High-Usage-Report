@@ -4,7 +4,7 @@
  **/
 global class HighUsageAlerts extends Framework.Domain {
 
-    public HighUsageAlerts(List<HighUsageAlert__c> sObjectList) {
+    public HighUsageAlerts(List<High_Usage_Alert__c> sObjectList) {
         super(sObjectList);
     }
 
@@ -16,27 +16,19 @@ global class HighUsageAlerts extends Framework.Domain {
 
     public override void applyDefaults() {
         Framework.Log.push(HighUsageAlerts.class.getName(),'applyDefaults');
-        //High_Usage_AlertService.setDefaults((HighUsageAlert__c []) records);
+        //HighUsageAlertService.setDefaults((High_Usage_Alert__c []) records);
         Framework.Log.pop();
     }
 
     public override void beforeInsert() {
         Framework.Log.push(HighUsageAlerts.class.getName(),'beforeInsert');
-        Framework.Log.pop();
-    }
-
-    public override void afterInsert() {
-        Framework.Log.push(HighUsageAlerts.class.getName(),'afterInsert');
+        HighUsageAlertService.beforeInsert((High_Usage_Alert__c[]) records);
         Framework.Log.pop();
     }
 
     public override void beforeUpdate(Map<Id,SObject> oldMap) {
         Framework.Log.push(HighUsageAlerts.class.getName(),'beforeUpdate');
-        Framework.Log.pop();
-    }
-
-    public override void afterUpdate(Map<Id,SObject> oldMap) {
-        Framework.Log.push(HighUsageAlerts.class.getName(),'afterUpdate');
+        HighUsageAlertService.beforeUpdate((High_Usage_Alert__c[]) records);
         Framework.Log.pop();
     }
 
