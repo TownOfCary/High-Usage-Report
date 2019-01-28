@@ -24,11 +24,6 @@ private class Test_AquastarAccount {
 
 	@IsTest
 	static void testGetReads() {
-		APIKeys__c testAPIKey = new APIKeys__c(
-				Name = 'AQUASTAR_TEST',
-				API_Secret_Key__c = '12333333467638shfdhaf',
-				API_URL__c = 'http://testurl.com'
-		);
 
 		Test.startTest();
 

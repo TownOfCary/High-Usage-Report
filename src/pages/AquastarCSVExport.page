@@ -1,2 +1,5 @@
-<apex:page>
+<apex:page controller="AquastarMeterReadController" showheader="false" contenttype="text/csv#{!csvFileName}">ReadTime,Reading,Delta
+    <apex:repeat value="{!aqua.reads}" var="read" id="theRepeat">
+	{!read.readtime},{!read.reading},{!read.delta}
+    </apex:repeat>
 </apex:page>

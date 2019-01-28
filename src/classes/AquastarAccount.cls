@@ -45,12 +45,12 @@ public with sharing class AquastarAccount {
 		Datetime offsetEndTime = endTime.addSeconds(UserInfo.getTimeZone().getOffset(endTime) / 1000);
 		system.debug(offsetBeginTime);
 		system.debug(offsetEndTime);
-		APIKeys__c apiInfo = APIKeys__c.getValues(AquastarAPIKey);
 		HttpRequest req = new HttpRequest();
-		req.setEndPoint(apiInfo.API_URL__c);
+		req.setEndPoint('callout:Aquastar_API/aquastarapi/meter_request/reads');
 		req.setMethod('POST');
 		req.setHeader('Content-Type', 'application/json');
-		String body = generateJSONContent(apiInfo.API_Secret_Key__c, offsetBeginTime, offsetEndTime);
+		req.setHeader('Authorization', '{!$Credential.Password}');
+		String body = generateJSONContent(offsetBeginTime, offsetEndTime);
 		req.setBody(body);
 
 		Http http = new Http();
@@ -83,7 +83,7 @@ public with sharing class AquastarAccount {
 		return false;
 	}
 
-	private String generateJSONContent(String apiKey, Datetime beginTime, Datetime endTime) {
+	private String generateJSONContent(Datetime beginTime, Datetime endTime) {
 		// Create a JSONGenerator object.
 		// Pass true to the constructor for pretty print formatting.
 		JSONGenerator gen = JSON.createGenerator(true);
@@ -92,7 +92,6 @@ public with sharing class AquastarAccount {
 		gen.writeStartObject();
 		gen.writeFieldName('meter_request');
 		gen.writeStartObject();
-		gen.writeStringField('key', apiKey);
 		gen.writeStringField('user', UserInfo.getUserName());
 		gen.writeFieldName('accounts');
 		gen.writeStartArray();
