@@ -1,0 +1,55 @@
+<apex:page applyBodyTag="false" applyHtmlTag="false" docType="html-5.0" controller="AquastarMeterReadController" standardStylesheets="true" sidebar="false" showHeader="false">
+    <html>
+    <head>
+        <script>document.body.style.overflow = 'scroll';</script>
+    </head>
+    <body>
+    <apex:form id="readsForm">
+        <apex:pageBlock title="Aquastar Customer Information">
+            <apex:pageMessages />
+            <apex:pageBlockSection columns="4" id="customerInfo">
+                <apex:outputLabel value="CID" for="CID"/>
+                <apex:outputText value="{!aqua.CID}" id="CID"/>
+                <apex:outputLabel value="LID" for="LID"/>
+                <apex:outputText value="{!aqua.LID}" id="LID"/>
+                <apex:outputLabel value="Meter Number" for="meterNumber"/>
+                <apex:outputText value="{!aqua.meterNumber}" id="meterNumber"/>
+                <apex:outputLabel value="Service" for="service"/>
+                <apex:outputText value="{!aqua.service}" id="service"/>
+                <apex:outputLabel value="Service Sequence" for="serviceSeq"/>
+                <apex:outputText value="{!aqua.serviceSeq}" id="serviceSeq"/>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageBlock title="Aquastar Hourly Meter Reads">
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton action="{!updateDateRange}" id="updateDateRange" reRender="readsTable" value="Update Date Range"/>
+                <apex:commandButton action="{!exportToCSV}" id="exportToCSV" value="Export To CSV"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection columns="4" id="datepicker" title="Date Range For Reads. (Dates are inclusive)">
+                <apex:outputLabel value="Begin Date" for="beginDate"/>
+                <apex:input type="datetime-local" value="{!beginDate}"/>
+                <apex:outputLabel value="End Date" for="endDate"/>
+                <apex:input type="datetime-local" value="{!endDate}"/>
+            </apex:pageBlockSection>
+            <apex:pageblocktable value="{!aqua.reads}" var="reads" title="Aquastar Hourly Meter Reads" id="readsTable" headerClass="header">
+                <apex:column value="{!reads.readtime}" >
+                    <apex:facet name="header">
+                        Readtime
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!reads.reading}">
+                    <apex:facet name="header">
+                        Reading
+                    </apex:facet>
+                </apex:column>
+                <apex:column value="{!reads.delta}">
+                    <apex:facet name="header">
+                        Delta
+                    </apex:facet>
+                </apex:column>
+            </apex:pageblocktable>
+        </apex:pageBlock>
+    </apex:form>
+    </body>
+    </html>
+</apex:page>
